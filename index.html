@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LCR Resonance Lab - Dr. Shivkumar Math</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root { --bg: #0f172a; --card: #1e293b; --text: #f1f5f9; --border: #334155; --accent: #3b82f6; --title-color: #f1f5f9; }
+        .light-mode { --bg: #ffffff; --card: #f8fafc; --text: #1e293b; --border: #cbd5e1; --accent: #2563eb; --title-color: #1e293b; }
+        
+        body { 
+            background-color: var(--bg); 
+            color: var(--text); 
+            transition: 0.3s; 
+            font-family: 'Cambria', serif; 
+            font-size: 12pt; 
+        }
+        
+        h1, h2, h3 { color: var(--title-color); }
+        .card { background-color: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; }
+        .tab-active { border-bottom: 3px solid var(--accent); color: var(--accent); font-weight: bold; }
+        
+        .math-box { 
+            background: rgba(100, 100, 100, 0.1); 
+            padding: 15px; 
+            border-radius: 8px; 
+            border-left: 5px solid var(--accent); 
+            line-height: 1.6; 
+        }
+        
+        #certificate { display: none; background: white; color: black; padding: 50px; border: 20px double #1e293b; width: 900px; margin: 20px auto; text-align: center; font-family: 'Cambria', serif; }
+        .circuit-bg { background-color: #ffffff; border: 2px solid #cbd5e1; }
+    </style>
+</head>
+<body class="p-4">
+
+    <header class="mb-6 border-b pb-4 border-slate-700">
+        <div class="flex justify-between items-start">
+            <div class="flex items-center gap-4">
+                <img src="C:\Users\shivu\OneDrive\Documents\Shivuphy@outlook.in folder\OneDrive\Desktop\Simulations\College logo.jpg" alt="JCE Logo" class="h-20 w-20 object-contain" onerror="this.src='https://via.placeholder.com/80?text=JCE+LOGO'">
+                <div>
+                    <h1 class="text-2xl font-bold uppercase">Jain College of Engineering, Belagavi</h1>
+                    <p class="text-sm opacity-80">Department of Physics</p>
+                </div>
+            </div>
+            <div class="text-right">
+                <button onclick="toggleTheme()" class="mb-2 text-xs bg-slate-700 text-white px-4 py-1 rounded-full hover:bg-slate-600 transition">🌓 Switch Theme</button>
+                <h3 class="font-bold text-emerald-500">Dr. Shivkumar Math</h3>
+                <p class="text-xs opacity-90">Professor & HOD, Dept. of Physics</p>
+            </div>
+        </div>
+        <h2 class="text-center text-2xl font-bold mt-4 underline decoration-blue-500 underline-offset-8 uppercase">Study of Series and Parallel LCR Resonance Circuit</h2>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <aside class="lg:col-span-3 space-y-4">
+            <div class="card">
+                <h3 class="text-sm font-bold mb-4 text-blue-500 uppercase tracking-widest">Circuit Controls</h3>
+                <div class="space-y-5">
+                    <div>
+                        <label class="flex justify-between text-sm mb-1">Resistance (R): <b><span id="r-val">220</span> Ω</b></label>
+                        <input type="range" id="res" min="10" max="1000" value="220" oninput="updateLab()">
+                    </div>
+                    <div>
+                        <label class="flex justify-between text-sm mb-1">Inductance (L): <b><span id="l-val">100</span> mH</b></label>
+                        <input type="range" id="ind" min="10" max="500" value="100" oninput="updateLab()">
+                    </div>
+                    <div>
+                        <label class="flex justify-between text-sm mb-1">Capacitance (C): <b><span id="c-val">0.1</span> µF</b></label>
+                        <input type="range" id="cap" min="0.01" max="2" step="0.01" value="0.1" oninput="updateLab()">
+                    </div>
+                    <div class="pt-2">
+                        <select id="mode" class="w-full bg-slate-800 text-white p-2 rounded text-sm border border-slate-600" onchange="resetData()">
+                            <option value="series">Series Resonance (Acceptor)</option>
+                            <option value="parallel">Parallel Resonance (Rejector)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-blue-500/30 bg-blue-500/5">
+                <h3 class="text-xs font-bold mb-2 text-blue-400 uppercase">Theoretical Values</h3>
+                <div class="text-[11px] space-y-2 font-mono">
+                    <p>Calculated Inductance (L): <span id="theo-l" class="text-white">--</span> H</p>
+                    <p>Resonant Freq (fᵣ): <span id="theo-fr" class="text-white">--</span> Hz</p>
+                    <p>Quality Factor (Q): <span id="theo-q" class="text-white">--</span></p>
+                </div>
+            </div>
+        </aside>
+
+        <main class="lg:col-span-6 space-y-4">
+            <div class="card flex flex-col items-center">
+                <div id="circuit-diagram" class="w-full h-52 flex justify-center items-center circuit-bg rounded-lg mb-4">
+                    </div>
+                <div id="mainGraph" class="w-full h-80"></div>
+            </div>
+            <div class="card p-0 overflow-hidden">
+                <nav class="flex bg-slate-800/50 border-b border-slate-700">
+                    <button onclick="setTab('theory')" class="px-6 py-3 text-sm font-bold tab-btn tab-active">Theory</button>
+                    <button onclick="setTab('procedure')" class="px-6 py-3 text-sm font-bold tab-btn">Procedure</button>
+                    <button onclick="setTab('records')" class="px-6 py-3 text-sm font-bold tab-btn">Result</button>
+                    <button onclick="setTab('quiz')" class="px-6 py-3 text-sm font-bold tab-btn">Quiz</button>
+                </nav>
+                <div id="content-area" class="p-6 text-sm max-h-96 overflow-y-auto"></div>
+            </div>
+        </main>
+
+        <aside class="lg:col-span-3 space-y-4">
+            <div class="card border-blue-500 bg-slate-900 shadow-lg text-white">
+                <h3 class="text-xs text-blue-400 font-bold mb-4 uppercase">Function Generator</h3>
+                <input type="range" id="freq" min="100" max="10000" step="50" value="1000" oninput="updateLab()">
+                <div class="text-center my-6">
+                    <p class="text-4xl font-mono text-blue-400" id="freq-display">1000 Hz</p>
+                    <p class="text-xs mt-2 opacity-60">Voltmeter Reading (V)</p>
+                    <p class="text-2xl font-mono text-emerald-400"><span id="volt-display">0.000</span> V</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="logReading()" class="flex-1 py-3 bg-blue-600 hover:bg-blue-500 rounded font-bold text-xs">LOG DATA</button>
+                    <button onclick="resetData()" class="p-3 bg-slate-700 rounded hover:bg-red-600">RESET</button>
+                </div>
+            </div>
+            <div class="card p-0 overflow-hidden h-64">
+                <table class="w-full text-xs text-center">
+                    <thead class="bg-slate-800 text-white sticky top-0">
+                        <tr><th class="p-2 border-b border-slate-700">Freq (Hz)</th><th class="p-2 border-b border-slate-700">V (V)</th></tr>
+                    </thead>
+                    <tbody id="dataTable" class="divide-y divide-slate-800"></tbody>
+                </table>
+            </div>
+        </aside>
+    </div>
+
+    <div id="certificate">
+        <div style="border: 2px solid #000; padding: 20px;">
+            <h1>JAIN COLLEGE OF ENGINEERING, BELAGAVI</h1>
+            <h3>Department of Physics</h3>
+            <div style="border-top: 2px solid #000; margin: 20px auto; width: 80%;"></div>
+            <h2 style="font-style: italic;">Certificate of Achievement</h2>
+            <p>This is to certify that the student</p>
+            <h1 id="cert-name" style="text-transform: uppercase; color: #2563eb;">[NAME]</h1>
+            <p>USN: <b id="cert-usn">[USN]</b></p>
+            <p>Completion: <span id="cert-date"></span></p>
+            <div style="margin-top: 40px; display: flex; justify-content: space-between; padding: 0 50px;">
+                <div style="text-align: center;"><p id="cert-code"></p><p>Verification Code</p></div>
+                <div style="text-align: center;"><p><b>Dr. Shivkumar Math</b><br>Professor & HOD</p></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let logs = [];
+        let score = 0;
+        let currentQ = 0;
+        const questions = [
+            { q: "1. At resonance, the phase angle between voltage and current is?", a: "0 degrees", o: ["0 degrees", "90 degrees", "180 degrees"] },
+            { q: "2. A series LCR circuit acts as a?", a: "Acceptor circuit", o: ["Rejector circuit", "Acceptor circuit", "Filter circuit"] },
+            { q: "3. The Quality factor (Q) is a measure of?", a: "Sharpness of resonance", o: ["Sharpness of resonance", "Power loss", "Impedance"] },
+            { q: "4. If L increases, the resonant frequency (fr) will?", a: "Decrease", o: ["Increase", "Decrease", "Stay same"] },
+            { q: "5. At resonance, impedance of a series LCR is?", a: "Minimum", o: ["Minimum", "Maximum", "Infinite"] },
+            { q: "6. Parallel LCR circuit at resonance is also known as?", a: "Anti-resonant circuit", o: ["Resonant circuit", "Anti-resonant circuit", "Tank circuit"] },
+            { q: "7. Bandwidth is defined as the range between?", a: "Half-power frequencies", o: ["Peak frequencies", "Half-power frequencies", "Zero frequencies"] },
+            { q: "8. Unit of Quality factor is?", a: "Dimensionless", o: ["Henry", "Farad", "Dimensionless"] },
+            { q: "9. In parallel resonance, source current is?", a: "Minimum", o: ["Minimum", "Maximum", "Zero"] },
+            { q: "10. Condition for resonance is?", a: "XL = XC", o: ["R = XL", "XL = XC", "R = 0"] }
+        ];
+
+        function toggleTheme() { document.body.classList.toggle('light-mode'); }
+
+        function updateLab() {
+            const r = parseFloat(document.getElementById('res').value);
+            const l = parseFloat(document.getElementById('ind').value) / 1000;
+            const c = parseFloat(document.getElementById('cap').value) / 1000000;
+            const f = parseFloat(document.getElementById('freq').value);
+            const mode = document.getElementById('mode').value;
+
+            // Update Theoretical Display
+            const theo_fr = 1 / (2 * Math.PI * Math.sqrt(l * c));
+            const theo_q = (1/r) * Math.sqrt(l/c);
+            document.getElementById('theo-l').innerText = l.toFixed(3);
+            document.getElementById('theo-fr').innerText = theo_fr.toFixed(2);
+            document.getElementById('theo-q').innerText = theo_q.toFixed(3);
+
+            document.getElementById('r-val').innerText = r;
+            document.getElementById('l-val').innerText = (l*1000).toFixed(0);
+            document.getElementById('c-val').innerText = (c*1000000).toFixed(2);
+            document.getElementById('freq-display').innerText = f + " Hz";
+
+            const w = 2 * Math.PI * f;
+            const xl = w * l;
+            const xc = 1 / (w * c);
+            const v_in = 5;
+            let v_out;
+
+            if(mode === 'series') {
+                const z = Math.sqrt(r**2 + Math.pow(xl - xc, 2));
+                v_out = (v_in / z) * r;
+                drawCircuit('series');
+            } else {
+                const z_tank_inv = Math.sqrt(Math.pow(1/10000, 2) + Math.pow((w * c) - (1 / (w * l)), 2));
+                const z_tank = 1 / z_tank_inv;
+                const z_total = Math.sqrt(Math.pow(r + z_tank, 2));
+                v_out = (v_in / z_total) * r;
+                drawCircuit('parallel');
+            }
+            document.getElementById('volt-display').innerText = v_out.toFixed(3);
+            updateGraph();
+        }
+
+        function drawCircuit(mode) {
+            const diag = document.getElementById('circuit-diagram');
+            if(mode === 'series') {
+                diag.innerHTML = `
+                <svg viewBox="0 0 500 180" class="w-full h-full fill-none stroke-black" stroke-width="2">
+                    <text x="30" y="30" fill="black" stroke="none" font-size="12" font-weight="bold">SERIES LCR CIRCUIT</text>
+                    <rect x="40" y="80" width="40" height="30" rx="3"/> <text x="35" y="75" fill="black" stroke="none" font-size="10">Function Gen.</text>
+                    <path d="M 80 95 h 40 l 5 -10 l 10 20 l 10 -20 l 10 20 l 5 -10 h 40" stroke="#b91c1c"/> <text x="135" y="75" fill="#b91c1c" stroke="none">R</text>
+                    <path d="M 200 95 h 30 q 5 -20 10 0 q 5 20 10 0 q 5 -20 10 0 h 30" stroke="#15803d"/> <text x="230" y="70" fill="#15803d" stroke="none">L</text>
+                    <path d="M 290 95 h 40 M 330 80 v 30 M 340 80 v 30 M 340 95 h 40" stroke="#1d4ed8"/> <text x="330" y="70" fill="#1d4ed8" stroke="none">C</text>
+                    <path d="M 380 95 v 60 h -340 v -45"/>
+                    <circle cx="140" cy="95" r="12" stroke="#ea580c" fill="white"/> <text x="136" y="99" fill="#ea580c" stroke="none" font-size="12">V</text>
+                </svg>`;
+            } else {
+                diag.innerHTML = `
+                <svg viewBox="0 0 500 180" class="w-full h-full fill-none stroke-black" stroke-width="2">
+                    <text x="30" y="30" fill="black" stroke="none" font-size="12" font-weight="bold">PARALLEL LCR CIRCUIT</text>
+                    <rect x="40" y="80" width="40" height="30" rx="3"/> <text x="35" y="75" fill="black" stroke="none" font-size="10">Function Gen.</text>
+                    <path d="M 80 95 h 40 l 5 -10 l 10 20 l 10 -20 l 5 -10 h 40" stroke="#b91c1c"/> <text x="120" y="75" fill="#b91c1c" stroke="none">R</text>
+                    <path d="M 180 95 h 30 v -35 h 40 q 5 20 10 0 q 5 -20 10 0 h 40 v 35 h 30 v 60 h -250 v -45" stroke="black"/>
+                    <path d="M 210 95 v 35 h 40 M 250 120 v 20 M 260 120 v 20 M 260 130 h 40 v -35" stroke="#1d4ed8"/> <text x="250" y="160" fill="#1d4ed8" stroke="none">C</text>
+                    <path d="M 210 60 h 40 q 5 20 10 0 q 5 -20 10 0 h 40" stroke="#15803d"/> <text x="250" y="50" fill="#15803d" stroke="none">L</text>
+                    <circle cx="130" cy="95" r="12" stroke="#ea580c" fill="white"/> <text x="126" y="99" fill="#ea580c" stroke="none" font-size="12">V</text>
+                </svg>`;
+            }
+        }
+
+        function calculateResults() {
+            if (logs.length < 5) return { fr: 0, bw: 0 };
+            const mode = document.getElementById('mode').value;
+            let fr, v_crit;
+            
+            if(mode === 'series') {
+                const max = logs.reduce((prev, curr) => (curr.v > prev.v) ? curr : prev);
+                fr = max.f;
+                v_crit = max.v * 0.707;
+            } else {
+                const min = logs.reduce((prev, curr) => (curr.v < prev.v) ? curr : prev);
+                fr = min.f;
+                v_crit = min.v / 0.707;
+            }
+
+            const pts = logs.filter(l => mode === 'series' ? l.v >= v_crit : l.v <= v_crit);
+            const bw = pts.length > 1 ? (pts[pts.length-1].f - pts[0].f) : 0;
+            return { fr, bw };
+        }
+
+        function updateGraph() {
+            const trace = { x: logs.map(l => l.f), y: logs.map(l => l.v), mode: 'markers+lines', marker: {color: '#fbbf24', size: 8} };
+            Plotly.newPlot('mainGraph', [trace], {
+                margin: {t:10, b:40, l:40, r:10}, paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)',
+                font: {size:10, color:'#94a3b8'}, xaxis: {title: 'Frequency (Hz)', gridcolor: '#334155'}, yaxis: {title: 'Voltage (V)', gridcolor: '#334155'}
+            });
+        }
+
+        function logReading() {
+            const f = document.getElementById('freq').value;
+            const v = document.getElementById('volt-display').innerText;
+            logs.push({f: parseFloat(f), v: parseFloat(v)});
+            logs.sort((a,b) => a.f - b.f);
+            document.getElementById('dataTable').innerHTML = logs.map(l => `<tr><td class="p-1">${l.f}</td><td class="p-1 text-blue-400">${l.v}</td></tr>`).join('');
+            updateGraph();
+        }
+
+        function resetData() { logs = []; document.getElementById('dataTable').innerHTML = ""; updateLab(); }
+
+        function setTab(tab) {
+            const content = document.getElementById('content-area');
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('tab-active'));
+            event.target.classList.add('tab-active');
+            if(tab === 'theory') {
+                content.innerHTML = `
+                <div class="math-box">
+                    <h4 class="font-bold text-blue-500 mb-2">Theoretical Principles</h4>
+                    Resonance in an LCR circuit occurs when the inductive reactance (X<sub>L</sub>) equals the capacitive reactance (X<sub>C</sub>).<br>
+                    <b>Condition:</b> X<sub>L</sub> = X<sub>C</sub> &rArr; 2&pi;fL = 1 / (2&pi;fC)<br>
+                    The Resonant Frequency is: <b>f<sub>r</sub> = 1 / (2&pi;&radic;LC)</b><br><br>
+                    <b>Series LCR:</b> Impedance is minimum at resonance. Voltage across the resistor (V<sub>R</sub>) reaches its maximum (V<sub>max</sub>).<br>
+                    <b>Parallel LCR:</b> Impedance of the LC tank is maximum at resonance. V<sub>R</sub> reaches its minimum (V<sub>min</sub>).
+                </div>`;
+            } else if(tab === 'procedure') {
+                content.innerHTML = `
+                <h4 class="font-bold text-blue-500 mb-2 underline">Experimental Procedure</h4>
+                <ol class="list-decimal ml-5 space-y-2">
+                    <li>Select configuration mode. Set fixed values for R, L, and C.</li>
+                    <li>Sweep frequency from 100 Hz upwards and log voltage at each step.</li>
+                    <li>Observe the peak/dip on the graph.</li>
+                    <li>Go to 'Result' tab to compare theoretical and experimental values.</li>
+                </ol>`;
+            } else if(tab === 'records') {
+                const res = calculateResults();
+                const r = parseFloat(document.getElementById('res').value);
+                const l = parseFloat(document.getElementById('ind').value) / 1000;
+                const c = parseFloat(document.getElementById('cap').value) / 1000000;
+                const theo_fr = 1 / (2 * Math.PI * Math.sqrt(l * c));
+                const theo_q = (1/r) * Math.sqrt(l/c);
+
+                content.innerHTML = `
+                <h4 class="font-bold text-blue-500 mb-2">Experimental Results Comparison</h4>
+                <div class="math-box">
+                    <p><b>Theoretical Calculations:</b></p>
+                    <ul class="list-disc ml-5 mb-3">
+                        <li>Chosen Inductance (L): ${l.toFixed(3)} H</li>
+                        <li>Resonant Frequency (f<sub>r</sub>): ${theo_fr.toFixed(2)} Hz</li>
+                        <li>Quality Factor (Q): ${theo_q.toFixed(3)}</li>
+                    </ul>
+                    <p><b>Experimental Observations (From Graph):</b></p>
+                    <ul class="list-disc ml-5">
+                        <li>Observed f<sub>r</sub>: ${res.fr} Hz</li>
+                        <li>Measured Bandwidth (&beta;): ${res.bw.toFixed(2)} Hz</li>
+                    </ul>
+                </div>`;
+            } else if(tab === 'quiz') { renderQuiz(); }
+        }
+
+        function renderQuiz() {
+            const q = questions[currentQ];
+            document.getElementById('content-area').innerHTML = `<div class="space-y-3"><p class="font-bold text-blue-400">Question ${currentQ + 1}/10</p><p>${q.q}</p>
+            <div class="flex flex-col gap-2">${q.o.map(opt => `<button onclick="handleAns('${opt}')" class="text-left p-2 bg-slate-800 text-white rounded hover:bg-slate-700 border border-slate-600">${opt}</button>`).join('')}</div></div>`;
+        }
+
+        function handleAns(opt) {
+            if(opt === questions[currentQ].a) score++;
+            currentQ++;
+            if(currentQ < 10) renderQuiz();
+            else {
+                document.getElementById('content-area').innerHTML = `<div class="text-center"><h3 class="text-xl font-bold">Score: ${score}/10</h3><input id="stuName" placeholder="Name" class="p-2 bg-slate-800 text-white rounded mr-2"><input id="stuUSN" placeholder="USN" class="p-2 bg-slate-800 text-white rounded"><button onclick="showCert()" class="block w-full mt-4 bg-emerald-600 text-white p-2 rounded">GET CERTIFICATE</button></div>`;
+            }
+        }
+
+        function showCert() {
+            document.getElementById('cert-name').innerText = document.getElementById('stuName').value;
+            document.getElementById('cert-usn').innerText = document.getElementById('stuUSN').value;
+            document.getElementById('cert-date').innerText = new Date().toLocaleDateString();
+            document.getElementById('cert-code').innerText = "JCE-PHY-" + Math.random().toString(36).substr(2, 6).toUpperCase();
+            document.getElementById('certificate').style.display = 'block';
+            window.print();
+        }
+
+        window.onload = () => { updateLab(); setTab('theory'); };
+    </script>
+</body>
+</html>
